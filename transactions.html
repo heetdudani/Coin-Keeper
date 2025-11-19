@@ -1,0 +1,300 @@
+{% extends "bash.html" %}
+{% block main %}
+{% load static %}  
+
+    <main class="container mx-auto px-4 py-8 max-w-7xl">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white">Transactions</h1>
+            <span class="text-base sm:text-lg font-medium text-gray-800 dark:text-white">Welcome, {{user.Username}}</span>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 sm:p-6 mb-6">
+            <div class="flex flex-col lg:flex-row gap-4">
+                <div class="flex-1 min-w-0">
+                    <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search</label>
+                    <input type="text" id="search" placeholder="Search transactions..." class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <div class="flex-1 min-w-0 lg:flex-none lg:w-48">
+                    <label for="type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                    <select id="type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white">
+                        <option value="All">All</option>
+                        <option value="Credited">Credited</option>
+                        <option value="Debited">Debited</option>
+                    </select>
+                </div>
+                <div class="flex-1 min-w-0 lg:flex-none lg:w-48">
+                    <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                    <select id="category" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white">
+                        <option value="All">All</option>
+                        <option value="Food">Food</option>
+                        <option value="Transportation">Transportation</option>
+                        <option value="Utilities">Utilities</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Income">Income</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="flex-1 min-w-0 lg:flex-none lg:w-48">
+                    <label for="start-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date</label>
+                    <input type="date" id="start-date" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <div class="flex-1 min-w-0 lg:flex-none lg:w-48">
+                    <label for="end-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Date</label>
+                    <input type="date" id="end-date" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <div class="flex items-end">
+                    <button id="add-transaction-btn" class="w-full lg:w-auto bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 px-4 rounded-md transition duration-200">Add Transaction</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transactions Table -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 class="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white">All Transactions</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-full">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                            <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Description</th>
+                            <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hidden sm:table-cell">Category</th>
+                            <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hidden sm:table-cell">Type</th>
+                            <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Amount</th>
+                            <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactions-table-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        <!-- Transactions will be dynamically added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal for Add Transaction -->
+    <div id="transaction-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-4 sm:top-20 mx-auto p-4 sm:p-5 border w-full max-w-md sm:w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+            <div class="mt-3">
+                <h3 id="modal-title" class="text-lg font-medium text-gray-900 dark:text-white mb-4"></h3>
+                <form id="transaction-form" method="POST">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label for="transaction-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
+                        <input type="date" name="date" id="transaction-date" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div class="mb-4">
+                        <input type="number" name="transaction-id" id="transaction-id" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" hidden>
+                    </div>
+                    <div class="mb-4">
+                        <input type="text" name="Operation" id="transaction-Operation" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" hidden>
+                    </div>
+                    <div class="mb-4">
+                        <label for="transaction-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                        <input type="text" name="Description" id="transaction-description" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div class="mb-4">
+                        <label for="transaction-category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                        <select id="transaction-category" name="Category" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white">
+                            <option value="">Select Category</option>
+                            <option value="Food">Food</option>
+                            <option value="Transportation">Transportation</option>
+                            <option value="Utilities">Utilities</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Income">Income</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="transaction-Type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                        <select id="transaction-Type" name="type" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white">
+                            <option value="Debited">Debited</option>
+                            <option value="Credited">Credited</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="transaction-amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount</label>
+                        <input type="number" name="amount" id="transaction-amount" step="0.01" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div class="flex flex-col sm:flex-row justify-end gap-2">
+                        <button type="submit" class="w-full sm:w-auto px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600" id="op-btn">Save</button>
+                        <button type="button" id="cancel-btn" class="w-full sm:w-auto px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white rounded-md hover:bg-gray-400 dark:hover:bg-gray-500">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+  
+    <!-- <script src="components/navbar.js"></script> -->
+    <script>
+        feather.replace();
+
+        // Sample transactions data (in a real app, this would come from a backend)
+        let transactions = [];
+
+       {% for i in historydata  %}
+             transactions.push({
+                id: "{{i.id}}",
+                date: "{{i.Date}}",
+                description: "{{i.Description}}",
+                category: "{{i.Category}}",
+                type : "{{i.transection_Type}}",
+                amount: "{{i.Amount}}",
+                
+            });
+        {% endfor %}  
+        console.log(transactions)
+        let editingId = null;
+        
+        // Function to filter transactions based on current filter values
+        function getFilteredTransactions() {
+            const search = document.getElementById('search').value.toLowerCase();
+            const type = document.getElementById('type').value;
+            const category = document.getElementById('category').value;
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+
+            return transactions.filter(transaction => {
+                // Search filter: check if description contains the search term
+                if (search && !transaction.description.toLowerCase().includes(search)) {
+                    return false;
+                }
+                // Type filter
+                if (type !== 'All' && transaction.type !== type) {
+                    return false;
+                }
+                // Category filter
+                if (category !== 'All' && transaction.category !== category) {
+                    return false;
+                }
+                // Date range filter
+                if (startDate && transaction.date < startDate) {
+                    return false;
+                }
+                if (endDate && transaction.date > endDate) {
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        // Render transactions table
+        function renderTransactions(filteredTransactions) {
+            const tbody = document.getElementById('transactions-table-body');
+            tbody.innerHTML = '';
+            filteredTransactions.forEach(transaction => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 dark:hover:bg-gray-700';
+                row.innerHTML = `
+                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${transaction.date}</td>
+                    <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${transaction.description}</td>
+                    <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 hidden sm:table-cell">${transaction.category}</td>
+                    <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 hidden sm:table-cell">${transaction.type}</td>
+                    <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium ${transaction.type =='Credited' ? 'text-green-500' : 'text-red-500'}">${transaction.type =='Debited' ? '' : ''}₹${Math.abs(transaction.amount).toFixed(2)}</td>
+                    <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button class="w-full sm:w-auto px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-900 delete-btn" data-id="${transaction.id}">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Function to update the table with filtered transactions
+        function updateTable() {
+            const filtered = getFilteredTransactions();
+            renderTransactions(filtered);
+        }
+
+        // Show modal for add/edit
+        function showModal(title, transaction = null) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('transaction-modal').classList.remove('hidden');
+            if (transaction) {
+                document.getElementById('transaction-date').value = transaction.date;
+                document.getElementById('transaction-id').value = transaction.id;
+                document.getElementById('transaction-description').value = transaction.description;
+                document.getElementById('transaction-category').value = transaction.category;
+                document.getElementById('transaction-Type').value = transaction.type;
+                document.getElementById('transaction-amount').value = transaction.amount;
+                document.getElementById('transaction-Operation').value = title;
+                document.getElementById('op-btn').innerHTML = title;
+                
+            } else {
+                document.getElementById('transaction-form').reset();
+                document.getElementById('op-btn').innerHTML = title;
+                document.getElementById('transaction-id').value = 0;
+                document.getElementById('transaction-Operation').value = title;
+            }
+        }
+        
+
+        // Hide modal
+        function hideModal() {
+            document.getElementById('transaction-modal').classList.add('hidden');
+        }
+        
+        // Add transaction
+        document.getElementById('add-transaction-btn').addEventListener('click', () => showModal('Add Transaction'));
+
+        // Edit transaction
+        
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('delete-btn')) {
+                const id = parseInt(e.target.dataset.id);
+                const transaction = transactions.find(t => t.id == id);
+                showModal('Delete Transaction', transaction);
+            }
+        });
+        
+
+        // Delete transaction
+       /* document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('delete-btn')) {
+                const id = parseInt(e.target.dataset.id);
+                if (confirm('Are you sure you want to delete this transaction?')) {
+                    transactions = transactions.filter(t => t.id != id);
+                    updateTable();
+                }
+            }
+        });*/
+        
+        // Form submit (Note: This is commented out as per original, assuming backend handling)
+        /*document.getElementById('transaction-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const date = document.getElementById('transaction-date').value;
+            const description = document.getElementById('transaction-description').value;
+            const category = document.getElementById('transaction-category').value;
+            const type = document.getElementById('transaction-Type').value;
+            const amount = parseFloat(document.getElementById('transaction-amount').value);
+            
+            if (editingId) {
+                const index = transactions.findIndex(t => t.id === editingId);
+                transactions[index] = { id: editingId, date, description, category, type, amount };
+            } else {
+                const newId = Math.max(...transactions.map(t => t.id)) + 1;
+                transactions.push({ id: newId, date, description, category, type, amount });
+            }
+            updateTable();
+            hideModal();
+        }); */
+        
+        // Cancel button
+        document.getElementById('cancel-btn').addEventListener('click', hideModal);
+        
+        // Event listeners for filters
+        document.getElementById('search').addEventListener('input', updateTable);
+        document.getElementById('type').addEventListener('change', updateTable);
+        document.getElementById('category').addEventListener('change', updateTable);
+        document.getElementById('start-date').addEventListener('change', updateTable);
+        document.getElementById('end-date').addEventListener('change', updateTable);
+        
+        // Initial render
+        updateTable();
+    </script>
+    <script src="{% static "navbar.js" %}"></script>
+    
+
+{% endblock main %}
