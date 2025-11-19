@@ -1,0 +1,512 @@
+{% extends "bash.html" %}
+{% block main %}
+{% load static %}
+    
+    <main class="container mx-auto px-4 py-8 max-w-7xl">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white">Analysis</h1>
+            <span class="text-base sm:text-lg font-medium text-gray-800 dark:text-white">Welcome, {{user.Username}}</span>
+        </div>
+
+        <div id="period-filters" class="mb-6 flex flex-wrap gap-2">
+            <button data-period="overall" class="period-btn px-4 py-2 rounded-md font-medium text-sm transition">Overall</button>
+            <button data-period="yearly-2023" class="period-btn px-4 py-2 rounded-md font-medium text-sm transition">Yearly</button>
+            <button data-period="monthly-2023-10" class="period-btn px-4 py-2 rounded-md font-medium text-sm transition">Monthly</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-green-100 dark:bg-green-800 p-3 rounded-full">
+                        <i data-feather="trending-up" class="w-6 h-6 text-green-500"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Income</h3>
+                        <p id="total-income" class="text-3xl font-bold text-green-500">$0.00</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+                 <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-red-100 dark:bg-red-800 p-3 rounded-full">
+                        <i data-feather="trending-down" class="w-6 h-6 text-red-500"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Expenses</h3>
+                        <p id="total-expenses" class="text-3xl font-bold text-red-500">$0.00</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+                 <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-primary-100 dark:bg-primary-800 p-3 rounded-full">
+                        <i data-feather="dollar-sign" class="w-6 h-6 text-primary-500"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Net Savings</h3>
+                        <p id="net-savings" class="text-3xl font-bold text-gray-800 dark:text-white">$0.00</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+                <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Expense Breakdown</h3>
+                <div class="relative h-64 sm:h-80">
+                    <canvas id="expense-chart"></canvas>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+                <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Income vs. Expense Trend</h3>
+                <div class="relative h-64 sm:h-80">
+                     <canvas id="trend-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+                <h3 class="p-4 sm:p-6 text-xl font-semibold text-gray-800 dark:text-white">Spending by Category</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                       <thead class="bg-gray-50 dark:bg-gray-700">
+                           <tr>
+                                <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Category</th>
+                                <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total</th>
+                                <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">% of Expenses</th>
+                           </tr>
+                       </thead>
+                       <tbody id="category-breakdown-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                           <tr><td class="p-6 text-center text-gray-500 dark:text-gray-400" colspan="3">No expense data for this period.</td></tr>
+                       </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+                 <h3 class="p-4 sm:p-6 text-xl font-semibold text-gray-800 dark:text-white">Recent Transactions</h3>
+                 <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                       <thead class="bg-gray-50 dark:bg-gray-700">
+                           <tr>
+                                <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                                <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Description</th>
+                                <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Amount</th>
+                           </tr>
+                       </thead>
+                       <tbody id="recent-transactions-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                           <tr><td class="p-6 text-center text-gray-500 dark:text-gray-400" colspan="3">No transactions for this period.</td></tr>
+                       </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Dynamically populate transactions from backend data
+        let transactions = [];
+
+        {% for i in historydata %}
+            transactions.push({
+                id: "{{ i.id }}",
+                date: "{{ i.Date }}",
+                description: "{{ i.Description }}",
+                category: "{{ i.Category }}",
+                type: "{{ i.transection_Type }}",
+                amount: parseFloat("{{ i.Amount }}")
+            });
+        {% endfor %}
+
+        console.log(transactions);  // Optional: For debugging
+        
+        // --- Navbar Logic ---
+        // Mobile menu toggle
+        document.getElementById('menu-toggle').addEventListener('click', () => {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        });
+
+        // Set active nav link
+        function setActiveNav() {
+            document.getElementById('nav-reports').classList.add('text-primary-500', 'dark:text-primary-400', 'font-bold');
+            document.getElementById('nav-reports-mobile').classList.add('text-primary-500', 'dark:text-primary-400', 'font-bold');
+        }
+
+        // --- Chart & Dashboard Logic ---
+        const totalIncomeEl = document.getElementById('total-income');
+        const totalExpensesEl = document.getElementById('total-expenses');
+        const netSavingsEl = document.getElementById('net-savings');
+        const expenseChartCtx = document.getElementById('expense-chart').getContext('2d');
+        const trendChartCtx = document.getElementById('trend-chart').getContext('2d');
+        const categoryBreakdownBody = document.getElementById('category-breakdown-body');
+        const recentTransactionsBody = document.getElementById('recent-transactions-body');
+        const periodFiltersContainer = document.getElementById('period-filters'); // Container for dynamic buttons
+
+        let expenseChartInstance = null;
+        let trendChartInstance = null;
+
+        // Utility: Format to $USD
+        const formatCurrency = (amount) => {
+            const options = { style: 'currency', currency: 'USD' };
+            const numberFormat = new Intl.NumberFormat('en-US', options);
+            return numberFormat.format(amount);
+        };
+
+        // Get available periods dynamically from data
+        function getAvailablePeriods() {
+            const years = new Set();
+            const months = new Set();
+
+            transactions.forEach(t => {
+                const date = new Date(t.date);
+                const year = date.getFullYear();
+                const month = date.getMonth() + 1; // 1-12
+                years.add(year);
+                months.add(`${year}-${String(month).padStart(2, '0')}`);
+            });
+
+            const periods = ['overall'];
+            Array.from(years).sort().forEach(year => periods.push(`yearly-${year}`));
+            Array.from(months).sort().forEach(month => periods.push(`monthly-${month}`));
+
+            return periods;
+        }
+
+        // Dynamically create period filter buttons
+        function createPeriodButtons() {
+            periodFiltersContainer.innerHTML = ''; // Clear existing buttons
+            const periods = getAvailablePeriods();
+
+            periods.forEach(period => {
+                const button = document.createElement('button');
+                button.className = 'period-btn bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 px-4 py-2 rounded-md text-sm font-medium';
+                button.dataset.period = period;
+                button.textContent = period.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()); // e.g., "Yearly 2025"
+                periodFiltersContainer.appendChild(button);
+            });
+        }
+
+        // 1. Filter Transactions by Period (now dynamic)
+        function filterTransactions(period) {
+            if (period === 'overall') {
+                return transactions;
+            }
+
+            const [type, value] = period.split('-');
+            if (type === 'yearly') {
+                return transactions.filter(t => t.date.startsWith(value));
+            } else if (type === 'monthly') {
+                return transactions.filter(t => t.date.startsWith(value));
+            }
+
+            return transactions; // Fallback
+        }
+
+        // 2. Update KPI Cards
+        function updateKPIs(filteredTransactions) {
+            let income = 0;
+            let expenses = 0;
+
+            filteredTransactions.forEach(t => {
+                if (t.type === 'Credited') {
+                    income += t.amount;
+                } else {
+                    expenses += t.amount;
+                }
+            });
+
+            const net = income - expenses;
+
+            totalIncomeEl.textContent = formatCurrency(income);
+            totalExpensesEl.textContent = formatCurrency(expenses);
+            
+            netSavingsEl.textContent = formatCurrency(net);
+            netSavingsEl.className = `text-3xl font-bold ${net >= 0 ? 'text-gray-800 dark:text-white' : 'text-red-500'}`;
+            
+            return { income, expenses };
+        }
+
+        // 3. Update Expense Doughnut Chart
+        function updateExpenseChart(filteredTransactions) {
+            if (expenseChartInstance) {
+                expenseChartInstance.destroy();
+            }
+
+            const categoryMap = {};
+            let totalExpenses = 0;
+
+            filteredTransactions.forEach(t => {
+                if (t.type === 'Debited' && t.category !== 'Income') {
+                    categoryMap[t.category] = (categoryMap[t.category] || 0) + t.amount;
+                    totalExpenses += t.amount;
+                }
+            });
+
+            const labels = Object.keys(categoryMap);
+            const data = Object.values(categoryMap);
+
+            if (data.length > 0) {
+                 expenseChartInstance = new Chart(expenseChartCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6'],
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: document.documentElement.classList.contains('dark') ? '#e5e7eb' : '#374151'
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                 expenseChartInstance = new Chart(expenseChartCtx, {
+                    type: 'doughnut',
+                    data: { labels: ['No Expense Data'], datasets: [{ data: [1], backgroundColor: ['#d1d5db'] }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                });
+            }
+            
+            return { categoryMap, totalExpenses };
+        }
+
+        // 4. Update Income/Expense Trend Line Chart
+        function updateTrendChart(filteredTransactions, period) {
+            if (trendChartInstance) {
+                trendChartInstance.destroy();
+            }
+
+            let labels = [];
+            let incomeData = [];
+            let expenseData = [];
+
+            if (period.startsWith('monthly-')) {
+                const [, yearMonth] = period.split('-');
+                const [year, month] = yearMonth.split('-').map(Number);
+                const daysInMonth = new Date(year, month, 0).getDate(); // Get days in month
+                labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+                incomeData = new Array(daysInMonth).fill(0);
+                expenseData = new Array(daysInMonth).fill(0);
+
+                filteredTransactions.forEach(t => {
+                    const day = new Date(t.date).getUTCDate();
+                    const dayIndex = day - 1;
+                    if (t.type === 'Credited') {
+                        incomeData[dayIndex] += t.amount;
+                    } else {
+                        expenseData[dayIndex] += t.amount;
+                    }
+                });
+
+            } else {
+                // Group by month for 'overall' or 'yearly'
+                labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                incomeData = new Array(12).fill(0);
+                expenseData = new Array(12).fill(0);
+
+                filteredTransactions.forEach(t => {
+                    const monthIndex = new Date(t.date).getUTCMonth();
+                    if (t.type === 'Credited') {
+                        incomeData[monthIndex] += t.amount;
+                    } else {
+                        expenseData[monthIndex] += t.amount;
+                    }
+                });
+            }
+            
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+            const labelColor = isDark ? '#e5e7eb' : '#374151';
+
+            trendChartInstance = new Chart(trendChartCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Income',
+                            data: incomeData,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Expenses',
+                            data: expenseData,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            ticks: { color: labelColor },
+                            grid: { color: gridColor }
+                        },
+                        x: {
+                            ticks: { color: labelColor },
+                            grid: { color: gridColor }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: labelColor }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 5. Update Category Breakdown Table
+        function updateCategoryTable(categoryMap, totalExpenses) {
+            categoryBreakdownBody.innerHTML = ''; // Clear table
+            
+            const categories = Object.keys(categoryMap);
+            
+            if (categories.length === 0) {
+                categoryBreakdownBody.innerHTML = `
+                    <tr><td class="px-4 sm:px-6 py-4 text-center text-gray-500 dark:text-gray-400" colspan="3">
+                        No expense data for this period.
+                    </td></tr>`;
+                return;
+            }
+            
+            categories
+                .sort((a, b) => categoryMap[b] - categoryMap[a]) // Sort descending
+                .forEach(category => {
+                    const amount = categoryMap[category];
+                    const percentage = totalExpenses > 0 ? (amount / totalExpenses * 100).toFixed(1) : 0;
+                    
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50 dark:hover:bg-gray-700';
+                    row.innerHTML = `
+                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${category}</td>
+                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${formatCurrency(amount)}</td>
+                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${percentage}%</td>
+                    `;
+                    categoryBreakdownBody.appendChild(row);
+                });
+        }
+        
+        // 6. Update Recent Transactions Table
+        function updateRecentTransactions(filteredTransactions) {
+            recentTransactionsBody.innerHTML = ''; // Clear table
+            
+            if (filteredTransactions.length === 0) {
+                recentTransactionsBody.innerHTML = `
+                    <tr><td class="px-4 sm:px-6 py-4 text-center text-gray-500 dark:text-gray-400" colspan="3">
+                        No transactions for this period.
+                    </td></tr>`;
+                return;
+            }
+            
+            // Get last 5 transactions from the filtered list
+            const recent = [...filteredTransactions].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+            
+            recent.forEach(t => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 dark:hover:bg-gray-700';
+                row.innerHTML = `
+                    <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${t.date}</td>
+                    <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${t.description}</td>
+                    <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium ${t.type === 'Credited' ? 'text-green-500' : 'text-red-500'}">
+                        ${t.type === 'Credited' ? '+' : '-'}${formatCurrency(t.amount)}
+                    </td>
+                `;
+                recentTransactionsBody.appendChild(row);
+            });
+        }
+
+        // --- Main Dashboard Update Function ---
+        function updateDashboard(period = 'overall') {
+            // Update active button style
+            const periodFilterButtons = document.querySelectorAll('.period-btn');
+            periodFilterButtons.forEach(btn => {
+                if (btn.dataset.period === period) {
+                    btn.classList.add('bg-primary-500', 'text-white');
+                    btn.classList.remove('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
+                } else {
+                    btn.classList.remove('bg-primary-500', 'text-white');
+                    btn.classList.add('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
+                }
+            });
+
+            // 1. Get data
+            const filteredData = filterTransactions(period);
+
+            // 2. Update KPIs
+            updateKPIs(filteredData);
+
+            // 3. Update Charts
+            const { categoryMap, totalExpenses } = updateExpenseChart(filteredData);
+            updateTrendChart(filteredData, period);
+            
+            // 4. Update Tables
+            updateCategoryTable(categoryMap, totalExpenses);
+            updateRecentTransactions(filteredData);
+        }
+        
+        // --- Event Listeners ---
+        // Use event delegation for dynamic buttons
+        periodFiltersContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('period-btn')) {
+                updateDashboard(e.target.dataset.period);
+            }
+        });
+
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            setActiveNav();
+            createPeriodButtons(); // Generate buttons dynamically
+            updateDashboard('overall'); // Load with 'Overall' view by default
+            feather.replace();
+        });
+        
+        // Re-apply icons after dashboard updates
+        // (Using a simple observer to re-run feather.replace() if new icons are added dynamically,
+        // but for this build, just running it once at the end is fine)
+        feather.replace();
+
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            500: '#6366f1',
+                        },
+                        secondary: {
+                            500: '#ec4899',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+{% endblock main %}
